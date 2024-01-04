@@ -1,5 +1,6 @@
 from flask import Blueprint, jsonify, request
 
+import json
 import jwt
 import secrets
 import string
@@ -114,14 +115,14 @@ def create_chat():
     cursor = conn.cursor()
 
     # Insert new chat
-    insert_query = 'INSERT INTO chats (messages) VALUES (?);'
-    cursor.execute(insert_query, (messages,))
+    insert_query = 'INSERT INTO chats (thread) VALUES (?);'
+    cursor.execute(insert_query, (json.dumps(messages),))
     conn.commit()
-
+    chat_id = cursor.lastrowid
     cursor.close()
     conn.close()
 
-    return jsonify({'chatID': 'Chat creation successful'}), 200
+    return jsonify({'chatID': chat_id}), 200
 
 @main_routes.route('/share-chat', methods=['PATCH'])
 def share_chat():

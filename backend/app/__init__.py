@@ -30,7 +30,7 @@ def create_app():
         create_chats_table_query = '''
             CREATE TABLE IF NOT EXISTS chats (
                 id INTEGER PRIMARY KEY,
-                messages JSON
+                thread JSON
             );
         '''
         cursor.execute(create_users_table_query)
