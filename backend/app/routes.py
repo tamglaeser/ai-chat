@@ -7,6 +7,7 @@ import jwt
 import string
 import random
 from datetime import datetime, timedelta
+import uuid
 
 @app.route('/users', methods=['GET'])
 def get_users():
@@ -70,17 +71,15 @@ def respond():
 def create_chat():
     data = request.json
     messages = data.get('messages')
+    new_uuid = uuid.uuid4()
 
-    new_chat = Chat(thread=messages)  # Assuming 'messages' is a list
+    new_chat = Chat(thread=messages, share_id=str(new_uuid), share_url=f'http://localhost:3000/chat/share/{new_uuid}')  # Assuming 'messages' is a list
 
     # Add the new chat to the session
     db.session.add(new_chat)
     db.session.commit()
 
-    # Access the newly created chat's ID
-    chat_id = new_chat.id
-
-    return jsonify({'chatID': chat_id}), 200
+    return jsonify({'chatID': new_chat.id, 'share_url': new_chat.share_url}), 200
 
 # @app.route('/share-chat', methods=['PATCH'])
 # def share_chat():
