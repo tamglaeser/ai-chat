@@ -1,7 +1,9 @@
 from flask import Blueprint, jsonify, request
+
 import jwt
 import secrets
 import string
+import random
 import sqlite3
 from config import DB_FILE
 
@@ -94,3 +96,47 @@ def login():
     else:
         # Return an error message if the login is unsuccessful
         return jsonify({'message': 'Invalid credentials'}), 401
+
+@main_routes.route('/respond', methods=['POST'])
+def respond():
+    data = request.json
+    question = data.get('inputText')
+
+    bot_response = ''.join(random.choices(string.ascii_letters + string.digits, k=200))
+    return jsonify({'userQuestion': question, 'botResponse': bot_response})
+
+@main_routes.route('/create-chat', methods=['POST'])
+def create_chat():
+    data = request.json
+    messages = data.get('messages')
+
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    # Insert new chat
+    insert_query = 'INSERT INTO chats (messages) VALUES (?);'
+    cursor.execute(insert_query, (messages,))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({'chatID': 'Chat creation successful'}), 200
+
+@main_routes.route('/share-chat', methods=['PATCH'])
+def share_chat():
+    data = request.json
+    messages = data.get('messages')
+
+    conn = sqlite3.connect(DB_FILE)
+    cursor = conn.cursor()
+
+    # Insert new chat
+    insert_query = 'INSERT INTO chats (url, thread) VALUES (?, ?);'
+    cursor.execute(insert_query, (name, messages))
+    conn.commit()
+
+    cursor.close()
+    conn.close()
+
+    return jsonify({'message': 'Chat creation successful'}), 201

@@ -16,8 +16,8 @@ def create_app():
         conn = sqlite3.connect(DB_FILE)
         cursor = conn.cursor()
 
-        # SQL command to create a table (users)
-        create_table_query = '''
+        # SQL create users table
+        create_users_table_query = '''
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY,
                 name CHAR(25) NOT NULL,
@@ -25,7 +25,16 @@ def create_app():
                 password CHAR(25) NOT NULL
             );
         '''
-        cursor.execute(create_table_query)
+
+        # SQL create chats table
+        create_chats_table_query = '''
+            CREATE TABLE IF NOT EXISTS chats (
+                id INTEGER PRIMARY KEY,
+                messages JSON
+            );
+        '''
+        cursor.execute(create_users_table_query)
+        cursor.execute(create_chats_table_query)
         conn.commit()
 
         cursor.close()
