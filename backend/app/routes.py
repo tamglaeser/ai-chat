@@ -1,35 +1,21 @@
-from flask import Blueprint, jsonify, request
-
+from flask import jsonify, request
+from app import app, db
+from app.models import User, Chat
+from config import SECRET_KEY
 import json
 import jwt
-import secrets
 import string
 import random
-import sqlite3
-from config import DB_FILE
+from datetime import datetime, timedelta
 
-main_routes = Blueprint('main', __name__)
-
-# Generate a random string of 32 characters using ascii_letters and digits
-secret_key = ''.join(secrets.choice(string.ascii_letters + string.digits) for _ in range(32))
-
-@main_routes.route('/users', methods=['GET'])
+@app.route('/users', methods=['GET'])
 def get_users():
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    # Query to fetch all users
-    query = 'SELECT * FROM users;'
-    cursor.execute(query)
-    users = cursor.fetchall()
-
-    cursor.close()
-    conn.close()
+    users = User.query.all()
 
     # Return fetched users as JSON
     return jsonify({'users': users})
 
-@main_routes.route('/signup', methods=['POST'])
+@app.route('/signup', methods=['POST'])
 def signup():
     data = request.json
     name = data.get('name')
@@ -39,30 +25,19 @@ def signup():
     if not name or not email or not password:
         return jsonify({'message': 'Name, email, and password are required'}), 400
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    # Query to fetch all users
-    check_query = 'SELECT id FROM users WHERE email = ?;'
-    cursor.execute(check_query, (email,))
-    existing_user = cursor.fetchone()
-
+    # Check if the user already exists
+    existing_user = User.query.filter_by(email=email).first()
     if existing_user:
-        cursor.close()
-        conn.close()
         return jsonify({'message': 'Email already exists'}), 400
 
-    # Insert new user
-    insert_query = 'INSERT INTO users (name, email, password) VALUES (?, ?, ?);'
-    cursor.execute(insert_query, (name, email, password))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
+    # Create a new user
+    new_user = User(name=name, email=email, password=password)
+    db.session.add(new_user)
+    db.session.commit()
 
     return jsonify({'message': 'Signup successful'}), 201
 
-@main_routes.route('/login', methods=['POST'])
+@app.route('/login', methods=['POST'])
 def login():
     data = request.json
     email = data.get('email')
@@ -72,33 +47,18 @@ def login():
     if not email or not password:
         return jsonify({'message': 'Email and password are required'}), 400
 
+    user = User.query.filter_by(email=email, password=password).first()
+    if not user:
+        return jsonify({'message': 'Invalid email or password'}), 401
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
+    # Generate a JWT token
+    token = jwt.encode({
+        'user_id': user.id,
+        'exp': datetime.utcnow() + timedelta(hours=1)  # Expiration time (adjust as needed)
+    }, SECRET_KEY, algorithm='HS256')
+    return jsonify({'token': token}), 200
 
-    # Query to fetch all users
-    query = 'SELECT id FROM users WHERE email = ? AND password = ?;'
-    cursor.execute(query, (email, password))
-    user = cursor.fetchone()
-
-    cursor.close()
-    conn.close()
-
-
-    # Validate the login credentials
-    if user:
-        payload = {'email': email}
-
-        # Generate a JWT token
-        token = jwt.encode(payload, secret_key, algorithm='HS256')
-
-        # Return a success message if the login is successful
-        return jsonify({'token': token}), 200
-    else:
-        # Return an error message if the login is unsuccessful
-        return jsonify({'message': 'Invalid credentials'}), 401
-
-@main_routes.route('/respond', methods=['POST'])
+@app.route('/respond', methods=['POST'])
 def respond():
     data = request.json
     question = data.get('inputText')
@@ -106,38 +66,23 @@ def respond():
     bot_response = ''.join(random.choices(string.ascii_letters + string.digits, k=200))
     return jsonify({'userQuestion': question, 'botResponse': bot_response})
 
-@main_routes.route('/create-chat', methods=['POST'])
+@app.route('/create-chat', methods=['POST'])
 def create_chat():
     data = request.json
     messages = data.get('messages')
 
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
+    new_chat = Chat(thread=messages)  # Assuming 'messages' is a list
 
-    # Insert new chat
-    insert_query = 'INSERT INTO chats (thread) VALUES (?);'
-    cursor.execute(insert_query, (json.dumps(messages),))
-    conn.commit()
-    chat_id = cursor.lastrowid
-    cursor.close()
-    conn.close()
+    # Add the new chat to the session
+    db.session.add(new_chat)
+    db.session.commit()
+
+    # Access the newly created chat's ID
+    chat_id = new_chat.id
 
     return jsonify({'chatID': chat_id}), 200
 
-@main_routes.route('/share-chat', methods=['PATCH'])
-def share_chat():
-    data = request.json
-    messages = data.get('messages')
-
-    conn = sqlite3.connect(DB_FILE)
-    cursor = conn.cursor()
-
-    # Insert new chat
-    insert_query = 'INSERT INTO chats (url, thread) VALUES (?, ?);'
-    cursor.execute(insert_query, (name, messages))
-    conn.commit()
-
-    cursor.close()
-    conn.close()
-
-    return jsonify({'message': 'Chat creation successful'}), 201
+# @app.route('/share-chat', methods=['PATCH'])
+# def share_chat():
+#     data = request.json
+#     url = data.get('messages')

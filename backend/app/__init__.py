@@ -1,52 +1,20 @@
 from flask import Flask
+from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
-import sqlite3
-from config import DB_FILE
+from config import SQLALCHEMY_DATABASE_URI, SQLALCHEMY_TRACK_MODIFICATIONS
 
-def create_app():
-    app = Flask(__name__)
+app = Flask(__name__)
+app.config['SQLALCHEMY_DATABASE_URI'] = SQLALCHEMY_DATABASE_URI
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = SQLALCHEMY_TRACK_MODIFICATIONS
 
-    CORS(app)  # Allow all origins for simplicity; adjust to your needs in production
+db = SQLAlchemy(app)
+CORS(app)
 
-    # Configuration settings (can be loaded from config.py)
-    app.config['SECRET_KEY'] = 'your_secret_key_here'
+from app import routes
 
-    # Database creation function
-    def create_db():
-        conn = sqlite3.connect(DB_FILE)
-        cursor = conn.cursor()
+# Import models after db is defined
+from app.models import User, Chat
 
-        # SQL create users table
-        create_users_table_query = '''
-            CREATE TABLE IF NOT EXISTS users (
-                id INTEGER PRIMARY KEY,
-                name CHAR(25) NOT NULL,
-                email VARCHAR(255) NOT NULL,
-                password CHAR(25) NOT NULL
-            );
-        '''
-
-        # SQL create chats table
-        create_chats_table_query = '''
-            CREATE TABLE IF NOT EXISTS chats (
-                id INTEGER PRIMARY KEY,
-                thread JSON
-            );
-        '''
-        cursor.execute(create_users_table_query)
-        cursor.execute(create_chats_table_query)
-        conn.commit()
-
-        cursor.close()
-        conn.close()
-
-    # Call the create_db function to initialize the database when the app starts
-    create_db()
-
-    # Register blueprints or import routes here
-    from app.routes import main_routes
-    app.register_blueprint(main_routes)
-
-    return app
-
-
+# Create tables
+with app.app_context():
+    db.create_all()
