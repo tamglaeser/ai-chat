@@ -19,6 +19,7 @@ export default function App() {
                     <Route path="login" element={<Login />} />
                     <Route path="signup" element={<Signup />} />
                     <Route path="chat" element={<Chat />} />
+                    <Route path="chat/share/:uuid" element={<Chat />} />
                     <Route path="*" element={<NoPage />} />
                 </Route>
             </Routes>

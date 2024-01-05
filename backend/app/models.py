@@ -14,3 +14,11 @@ class Chat(db.Model):
 
     def __repr__(self):
         return f'<Chat {self.id}>'
+
+    def as_dict(self):
+        return {
+            'id': self.id,
+            'thread': self.thread,
+            'share_id': self.share_id,
+            'share_url': self.share_url
+        }

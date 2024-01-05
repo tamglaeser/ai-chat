@@ -73,15 +73,22 @@ def create_chat():
     messages = data.get('messages')
     new_uuid = uuid.uuid4()
 
+    # Check if the chat already exists
+    existing_chat = Chat.query.filter_by(thread=messages).first()
+    if existing_chat:
+        return jsonify({'message': 'Chat thread already exists'}), 400
+
     new_chat = Chat(thread=messages, share_id=str(new_uuid), share_url=f'http://localhost:3000/chat/share/{new_uuid}')  # Assuming 'messages' is a list
 
     # Add the new chat to the session
     db.session.add(new_chat)
     db.session.commit()
 
-    return jsonify({'chatID': new_chat.id, 'share_url': new_chat.share_url}), 200
+    return jsonify({ 'chat': new_chat.as_dict() }), 200
 
-# @app.route('/share-chat', methods=['PATCH'])
-# def share_chat():
-#     data = request.json
-#     url = data.get('messages')
+@app.route('/chat/<uuid>', methods=['GET'])
+def get_chat_by_uuid(uuid):
+    chat = Chat.query.filter_by(share_id=uuid).first()
+    if chat:
+        return jsonify({ 'chat': chat.as_dict() })
+    return jsonify({'message': 'Chat not found'}), 404
