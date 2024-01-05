@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-// import GoogleLogin from 'react-google-login';
-// import GithubLogin from 'react-github-login';
+import { GoogleLogin } from '@react-oauth/google';
 import axios from 'axios';
 import {Link, useLocation, useNavigate} from "react-router-dom";
 const Login = () => {
@@ -36,16 +35,22 @@ const Login = () => {
         }
     };
 
-    const responseGoogle = (response) => {
-        // Handle Google login response
-        console.log('Google login response:', response);
+    const responseMessage = (response) => {
+        console.log('Google login success:', response);
+        const tokenId = response.tokenId;
+        axios.post('/login-with-google', { tokenId })
+            .then((response) => {
+                console.log('Backend response:', response);
+                // Handle successful login response if needed
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+                // Handle error if needed
+            });
     };
-
-    const responseGitHub = (response) => {
-        // Handle GitHub login response
-        console.log('GitHub login response:', response);
+    const errorMessage = (error) => {
+        console.log(error);
     };
-
     return (
         <div className="container d-flex justify-content-center align-items-center vh-100">
             <div className="card p-4 col-10 col-md-6 col-lg-4">
@@ -63,22 +68,7 @@ const Login = () => {
                 </p>
 
                 {/* Google Login */}
-                {/*<GoogleLogin*/}
-                {/*    clientId="YOUR_GOOGLE_CLIENT_ID"*/}
-                {/*    buttonText="Login with Google"*/}
-                {/*    onSuccess={responseGoogle}*/}
-                {/*    onFailure={responseGoogle}*/}
-                {/*    cookiePolicy={'single_host_origin'}*/}
-                {/*/>*/}
-
-                {/*/!* GitHub Login *!/*/}
-                {/*<GithubLogin*/}
-                {/*    clientId="YOUR_GITHUB_CLIENT_ID"*/}
-                {/*    buttonText="Login with GitHub"*/}
-                {/*    onSuccess={responseGitHub}*/}
-                {/*    onFailure={responseGitHub}*/}
-                {/*    redirectUri=""*/}
-                {/*/>*/}
+                <GoogleLogin onSuccess={responseMessage} onError={errorMessage} />
             </div>
         </div>
     );

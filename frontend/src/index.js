@@ -9,6 +9,7 @@ import Chat from "./components/Chat";
 import NoPage from "./components/NoPage";
 import reportWebVitals from "./reportWebVitals";
 import Signup from "./components/Signup";
+import {GoogleOAuthProvider} from "@react-oauth/google";
 
 export default function App() {
     return (
@@ -28,7 +29,11 @@ export default function App() {
 }
 
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+root.render(
+    <GoogleOAuthProvider clientId="667185241621-egahaca17p5707g8790ld8d794toh16v.apps.googleusercontent.com">
+        <App />
+    </GoogleOAuthProvider>
+);
 
 // If you want to start measuring performance in your app, pass a function
 // to log results (for example: reportWebVitals(console.log))

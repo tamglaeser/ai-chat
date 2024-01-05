@@ -2,6 +2,8 @@ from flask import jsonify, request
 from app import app, db
 from app.models import User, Chat
 from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
+from google.oauth2 import id_token
+from google.auth.transport import requests
 import string
 import random
 import uuid
@@ -51,6 +53,24 @@ def login():
 
     token = create_access_token(identity=user.id)
     return jsonify({'token': token}), 200
+
+@app.route('/login-with-google', methods=['POST'])
+def login_with_google():
+    token = request.json.get('tokenId')
+    try:
+        # Verify Google OAuth token
+        idinfo = id_token.verify_oauth2_token(token, requests.Request(), app.config['GOOGLE_CLIENT_ID'])
+
+        # Extract user information from verified token
+        user_email = idinfo.get('email')
+        user_id = idinfo.get('sub')  # 'sub' is the unique user ID in Google
+
+        # Generate JWT for the authenticated user
+        access_token = create_access_token(identity=user_email)  # Adjust identity as needed
+
+        return jsonify({'access_token': access_token}), 200
+    except Exception as e:
+        return jsonify({'message': 'Token verification failed'}), 401
 
 @app.route('/logout', methods=['POST'])
 def logout():
