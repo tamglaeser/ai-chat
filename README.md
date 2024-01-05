@@ -64,3 +64,4 @@ feedbackapp/
 * Implement tests
 * Host project
 * Improve UI
+* Lint
