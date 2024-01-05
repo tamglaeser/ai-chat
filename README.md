@@ -63,5 +63,6 @@ feedbackapp/
 
 * Implement tests
 * Host project
+* Finish Google / GitHub login functionality 
 * Improve UI
 * Lint
