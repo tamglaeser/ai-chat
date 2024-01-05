@@ -1,12 +1,9 @@
 from flask import jsonify, request
 from app import app, db
 from app.models import User, Chat
-from config import SECRET_KEY
-import json
-import jwt
+from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity, unset_jwt_cookies
 import string
 import random
-from datetime import datetime, timedelta
 import uuid
 
 @app.route('/users', methods=['GET'])
@@ -52,12 +49,14 @@ def login():
     if not user:
         return jsonify({'message': 'Invalid email or password'}), 401
 
-    # Generate a JWT token
-    token = jwt.encode({
-        'user_id': user.id,
-        'exp': datetime.utcnow() + timedelta(hours=1)  # Expiration time (adjust as needed)
-    }, SECRET_KEY, algorithm='HS256')
+    token = create_access_token(identity=user.id)
     return jsonify({'token': token}), 200
+
+@app.route('/logout', methods=['POST'])
+def logout():
+    resp = jsonify({'logout': True})
+    unset_jwt_cookies(resp)
+    return resp, 200
 
 @app.route('/respond', methods=['POST'])
 def respond():
@@ -87,6 +86,7 @@ def create_chat():
     return jsonify({ 'chat': new_chat.as_dict() }), 200
 
 @app.route('/chat/<uuid>', methods=['GET'])
+@jwt_required()
 def get_chat_by_uuid(uuid):
     chat = Chat.query.filter_by(share_id=uuid).first()
     if chat:

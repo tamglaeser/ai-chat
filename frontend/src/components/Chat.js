@@ -1,27 +1,41 @@
 import React, {useEffect, useState} from "react";
 import { Modal } from 'react-bootstrap';
 import axios from "axios";
-import {useParams} from "react-router-dom";
+import {useNavigate, useParams} from "react-router-dom";
 const Chat = () => {
     const { uuid } = useParams(); // Access the 'uuid' parameter from the URL
+    const navigate = useNavigate();
 
     const [messages, setMessages] = useState([]);
     const [inputText, setInputText] = useState('');
     const [copySuccess, setCopySuccess] = useState(false);
 
-    useEffect(async () => {
-        // Simulated data fetching based on the presence of 'uuid'
-        if (uuid) {
-            // If 'uuid' is present, fetch messages related to that 'uuid'
-            // Here, you might fetch messages from an API or some data source
-            // Replace this with your actual fetching logic
-            const response = await axios.get('http://127.0.0.1:5000/chat/' + uuid)
-            setMessages(response.data.chat.thread);
-        } else {
-            // If 'uuid' is not present, set default messages or an empty array
-            setMessages([]); // Set default or empty messages
+    useEffect(() => {
+        async function fetchChat() {
+            if (uuid) {
+                try {
+                    const response = await axios.get('http://127.0.0.1:5000/chat/' + uuid, {
+                        headers: {
+                            Authorization: `Bearer ${localStorage.getItem('token')}`
+                        }
+                    })
+                    setMessages(response.data.chat.thread);
+                } catch (error) {
+                    if (error.response && (error.response.status === 401 || error.response.status === 422)) {
+                        // Redirect to the login page when unauthorized
+                        navigate('/login', { state: { from: `/chat/share/${uuid}` } });
+                    } else {
+                        // Handle other errors
+                        console.error('Error:', error);
+                    }
+                }
+            } else {
+                // If 'uuid' is not present, set default messages or an empty array
+                setMessages([]); // Set default or empty messages
+            }
         }
-    }, [uuid]);
+        fetchChat();
+    }, [uuid, navigate]);
 
     const sendMessage = async () => {
         if (inputText.trim() !== '') {
@@ -66,8 +80,18 @@ const Chat = () => {
         }
     };
 
+    const handleLogout = () => {
+        localStorage.removeItem('token');
+        navigate('/login');
+    };
+
     return (
         <div className="container mt-5">
+            <div className="d-flex justify-content-end">
+                <button className="btn btn-danger" onClick={handleLogout}>
+                    Logout
+                </button>
+            </div>
             <div className="card">
                 <div className="card-body">
                     <div className="chat-box">

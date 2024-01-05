@@ -2,9 +2,10 @@ import React, { useState } from 'react';
 // import GoogleLogin from 'react-google-login';
 // import GithubLogin from 'react-github-login';
 import axios from 'axios';
-import {Link, useNavigate} from "react-router-dom";
+import {Link, useLocation, useNavigate} from "react-router-dom";
 const Login = () => {
     const navigate = useNavigate();
+    const location = useLocation();
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [token, setToken] = useState('');
@@ -27,7 +28,9 @@ const Login = () => {
             setToken(token);
             // Save the token to local storage
             localStorage.setItem('token', token);
-            navigate('/chat');
+            // Retrieve intended route from location state
+            const intendedRoute = location.state?.from || '/chat'; // Default to '/chat' if no intended route
+            navigate(intendedRoute);
         } catch (error) {
             console.error(error);
         }
